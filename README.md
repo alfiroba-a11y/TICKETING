@@ -23,7 +23,7 @@ The app connects to the dedicated `ticketing_kenya` database by default and uses
 
 The HTTP server and homepage start even when optional environment values are missing. If `MONGODB_URI` is absent or the database is unreachable, `/health` stays available and reports the database state; event, booking, and admin data APIs return a temporary unavailable response. MongoDB connection failures retry every 30 seconds. If admin credentials or a 32+ character `SESSION_SECRET` are missing, public pages still load but admin sign-in stays disabled. HashPay checkout stays disabled until its account ID and webhook secret are set. Configure these values to enable the corresponding features.
 
-Customers can create an account or sign in from the public header. Account passwords are hashed before storage, and paid orders are linked to the signed-in account. Guest checkout remains available.
+Customers can create an account with their full names, county, Gmail address and a password of at least 6 characters. Passwords are hashed before storage. Signed-in account holders can view tickets and download PDFs; guest checkout remains available.
 
 Open `/admin` directly to sign in. There is no public admin link or public event publishing route. Configure the administrator credentials in Coolify. Draft events are private; only events published by the administrator appear on the public site.
 
