@@ -1,6 +1,6 @@
 # Ticketing Kenya
 
-A Coolify-ready event discovery and ticketing app with a private administrator portal, MongoDB storage, configurable Kenyan venue layouts, HashPay M-Pesa checkout, QR tickets, and printable PDF passes.
+A Coolify-ready event discovery and ticketing app with a private administrator portal, MongoDB storage, configurable Kenyan venue layouts, background HashPay M-Pesa checkout, QR tickets, and printable PDF passes.
 
 ## Coolify deployment
 
@@ -17,11 +17,12 @@ Deploy this directory as a Docker application and expose port `3000`. Set these 
 | `MONGODB_DATABASE` | `ticketing_kenya` (separate database namespace) |
 | `PUBLIC_BASE_URL` | Public HTTPS URL for QR validation links |
 | `HASHPAY_ACCOUNT_ID` | HashPay public account ID |
+| `HASHPAY_API_KEY` | Private HashPay API key used only by the server to send M-Pesa prompts |
 | `HASHPAY_WEBHOOK_SECRET` | HashPay webhook signing secret |
 
 The app connects to the dedicated `ticketing_kenya` database by default and uses collections prefixed `tk_` (`tk_venues`, `tk_events`, `tk_event_inventory`, `tk_orders`, `tk_tickets`, `tk_members`). Set a different `MONGODB_DATABASE` if you need a different namespace. MongoDB credentials and payment secrets remain server-side.
 
-The HTTP server and homepage start even when optional environment values are missing. If `MONGODB_URI` is absent or the database is unreachable, `/health` stays available and reports the database state; event, booking, and admin data APIs return a temporary unavailable response. MongoDB connection failures retry every 30 seconds. The private admin sign-in page and credential check stay available while MongoDB reconnects; the dashboard explains when its data tools are waiting for the database. Admin sign-in is enabled when `ADMIN_EMAIL` and `ADMIN_PASSWORD` are set. Session cookies follow the actual HTTPS connection reported by Coolify. If `SESSION_SECRET` is absent, the app derives a stable signing key from the MongoDB URI (or the admin credentials when MongoDB is not configured); set a random 32+ character secret in production and keep it stable. HashPay checkout stays disabled until its account ID and webhook secret are set. Configure these values to enable the corresponding features.
+The HTTP server and homepage start even when optional environment values are missing. If `MONGODB_URI` is absent or the database is unreachable, `/health` stays available and reports the database state; event, booking, and admin data APIs return a temporary unavailable response. MongoDB connection failures retry every 30 seconds. The private admin sign-in page and credential check stay available while MongoDB reconnects; the dashboard explains when its data tools are waiting for the database. Admin sign-in is enabled when `ADMIN_EMAIL` and `ADMIN_PASSWORD` are set. Session cookies follow the actual HTTPS connection reported by Coolify. If `SESSION_SECRET` is absent, the app derives a stable signing key from the MongoDB URI (or the admin credentials when MongoDB is not configured); set a random 32+ character secret in production and keep it stable. Background HashPay STK Push stays disabled until the account ID, private API key and webhook secret are set. Configure these values to enable the corresponding features.
 
 Customers can create an account with their full names, county, Gmail address and a password of at least 6 characters. Registration signs them in immediately. Member sessions end after one hour without an authenticated request. An identity card number is requested only when an administrator marks an event as 18+; for those events, a number is required for each attendee and encrypted before being stored with the order. Passwords are hashed; keep `SESSION_SECRET` stable so encrypted identity details remain readable to authorized application flows. Signed-in account holders can manage profile preferences, review their wallet ledger, view/transfer eligible tickets, manage sessions, request account deletion, export their data and message support. The private admin panel includes member records, wallet adjustments and support conversations. Support replies are stored and refresh in the profile while it is open.
 
