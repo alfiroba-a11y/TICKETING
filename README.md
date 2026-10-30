@@ -23,9 +23,11 @@ The app connects to the dedicated `ticketing_kenya` database by default and uses
 
 The HTTP server and homepage start even when optional environment values are missing. If `MONGODB_URI` is absent or the database is unreachable, `/health` stays available and reports the database state; event, booking, and admin data APIs return a temporary unavailable response. MongoDB connection failures retry every 30 seconds. If admin credentials or a 32+ character `SESSION_SECRET` are missing, public pages still load but admin sign-in stays disabled. HashPay checkout stays disabled until its account ID and webhook secret are set. Configure these values to enable the corresponding features.
 
-Customers can create an account with their full names, county, Gmail address and a password of at least 6 characters. Passwords are hashed before storage. Signed-in account holders can view tickets and download PDFs; guest checkout remains available.
+Customers can create an account with their full names, county, Gmail address, Kenyan identity number and a password of at least 6 characters. Passwords are hashed and identity numbers are encrypted at rest using a key derived from `SESSION_SECRET`; keep that secret stable or encrypted IDs cannot be decrypted. Signed-in account holders can manage profile preferences, review their wallet ledger, view/transfer eligible tickets, manage sessions, request account deletion, export their data and message support. The private admin panel includes member records, wallet adjustments and support conversations. Support replies are stored and refresh in the profile while it is open.
 
 Open `/admin` directly to sign in. There is no public admin link or public event publishing route. Configure the administrator credentials in Coolify. Draft events are private; only events published by the administrator appear on the public site.
+
+The customer profile does not collect or store card numbers. M-Pesa preference numbers are profile contact details; actual payment credentials and prompts remain with HashPay. Phone/email verification, SMS/WhatsApp delivery, push alerts, social sign-in and Apple/Google wallet pass issuance require separate provider integrations and are not represented as verified or delivered until configured. County badges use Commons flag files where a county flag asset is available; these are community reference files and should be confirmed with the relevant county before official use.
 
 In HashPay, configure the HTTPS webhook URL as `https://YOUR_DOMAIN/api/payments/hashpay/webhook` and copy the signing secret into Coolify. Use a real HashPay account and verify the provider’s current dashboard configuration before going live. The browser callback only starts a status check; tickets are issued after the signed server webhook confirms the transaction and amount.
 
@@ -56,9 +58,13 @@ The app distinguishes upcoming from happening-now events using the event start/e
 
 The homepage uses locally bundled, real photographs from Wikimedia Commons rather than generated imagery for the Kenyan flag and Big Five feature. The site displays attribution and license links in the photo credits disclosure:
 
+County flag reference images: [Flags of counties of Kenya](https://commons.wikimedia.org/wiki/Category:Flags_of_counties_of_Kenya). The available set is incomplete and some flags/designs may not be officially adopted; county badges fall back to a neutral county abbreviation when an image is unavailable.
+
 - Kenyan flags — Gustavo Ribeiro Faria, CC BY-SA 4.0: https://commons.wikimedia.org/wiki/File:Kenyan_flag_on_2016-08-02_11.01.27.jpg
 - Lion — Swissfrog, CC BY 3.0: https://commons.wikimedia.org/wiki/File:African_Lion_3.jpg
 - Elephant — Sam Stearman, CC BY-SA 3.0 / GFDL: https://commons.wikimedia.org/wiki/File:African_Elephant_in_Kenya.jpg
 - Leopard — Sumeet Moghe, CC BY-SA 4.0: https://commons.wikimedia.org/wiki/File:Male_leopard_-_Mara.jpg
 - Buffalo — Chuckupd, public domain: https://commons.wikimedia.org/wiki/File:African_buffalo_kenya.jpg
 - Rhino — Wwelles14, CC BY 3.0: https://commons.wikimedia.org/wiki/File:White_Rhino_Nakuru.jpg
+
+© 2026/27 Ticketing Kenya.
