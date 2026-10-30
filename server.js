@@ -13,14 +13,16 @@ app.use((req,res,next)=>{res.setHeader('X-Content-Type-Options','nosniff');res.s
 const port=Number(process.env.PORT||3000);
 const adminEmail=String(process.env.ADMIN_EMAIL||'').trim().toLowerCase();
 const adminPassword=String(process.env.ADMIN_PASSWORD||'');
-const sessionSecret=String(process.env.SESSION_SECRET||'');
-if(!adminEmail||!adminPassword||sessionSecret.length<32)throw new Error('Set ADMIN_EMAIL, ADMIN_PASSWORD and SESSION_SECRET (32+ chars).');
+const adminConfigured=Boolean(adminEmail&&adminPassword&&String(process.env.SESSION_SECRET||'').length>=32);
+// Keep the public app bootable before admin credentials are configured. The
+// generated secret is process-local, and admin endpoints remain disabled.
+const sessionSecret=String(process.env.SESSION_SECRET||'')||crypto.randomBytes(48).toString('hex');
 const mongoUri=String(process.env.MONGODB_URI||'');
 const mongoDbName=String(process.env.MONGODB_DATABASE||'ticketing_kenya');
-if(!mongoUri)throw new Error('Set MONGODB_URI in Coolify.');
 const hashpayAccount=String(process.env.HASHPAY_ACCOUNT_ID||'');
 const webhookSecret=String(process.env.HASHPAY_WEBHOOK_SECRET||'');
-const client=new MongoClient(mongoUri,{appName:'ticketing-kenya'});
+const client=mongoUri?new MongoClient(mongoUri,{appName:'ticketing-kenya'}):null;
+let databaseReady=false;
 
 const userImages={stadium:'/images/talanta-stadium-exterior.png',pitch:'/images/stadium-seating.png',theatre:'/images/theatre-seating.png',cinema:'/images/cinema-auditorium.png',snacks:'/images/cinema-concessions.png'};
 const venueSeeds=[
@@ -89,7 +91,19 @@ async function syncInventory(event,venue){
 }
 const loginLimiter=rateLimit({windowMs:15*60*1000,limit:8,standardHeaders:'draft-8',legacyHeaders:false,message:{error:'Too many sign-in attempts. Try again in 15 minutes.'}});
 
+// Start the HTTP server independently of optional services. Coolify can route
+// to the homepage while MongoDB/admin/payment setup is still in progress.
+app.use(express.json({limit:'96kb'}));
+app.use('/images',express.static(path.join(__dirname,'images'),{maxAge:'7d',immutable:true}));
+app.get('/health',(req,res)=>res.status(200).json({ok:true,database:databaseReady?'connected':'not_configured_or_unavailable'}));
+app.get('/api/config',(req,res)=>res.json({paymentsEnabled:Boolean(databaseReady&&hashpayAccount&&webhookSecret),hashpayAccount:hashpayAccount||null,databaseReady,adminConfigured}));
+app.use('/api', (req,res,next)=>databaseReady?next():res.status(503).json({error:client?'Database is connecting or unavailable.':'MongoDB is not configured; data features are temporarily unavailable.'}));
+app.get('/',(req,res)=>res.sendFile(path.join(__dirname,'index.html')));
+app.get('/admin',(req,res)=>res.sendFile(path.join(__dirname,'index.html')));
+app.listen(port,'0.0.0.0',()=>console.log(`Ticketing Kenya web server listening on port ${port}`));
+
 async function start(){
+ if(!client){console.warn('MongoDB is not configured. Public shell is running; event, booking, and admin data services are unavailable.');return}
  await client.connect();const db=client.db(mongoDbName);
  collections={venues:db.collection('tk_venues'),events:db.collection('tk_events'),inventory:db.collection('tk_event_inventory'),orders:db.collection('tk_orders'),tickets:db.collection('tk_tickets')};
  await Promise.all([collections.venues.createIndex({slug:1},{unique:true}),collections.events.createIndex({status:1,startsAt:1}),collections.inventory.createIndex({eventId:1,tierId:1,inventoryKey:1},{unique:true}),collections.inventory.createIndex({eventId:1,tierId:1,status:1}),collections.orders.createIndex({reference:1},{unique:true}),collections.orders.createIndex({accessHash:1}),collections.tickets.createIndex({ticketCode:1},{unique:true}),collections.tickets.createIndex({orderId:1,index:1},{unique:true})]);
@@ -104,11 +118,10 @@ async function start(){
    await collections.orders.updateOne({_id:order._id,status:'pending'},{$set:{status:'paid',receipt:String(p.TransactionReceipt||p.TransactionID||''),paidAt:new Date(),updatedAt:new Date()}});return res.status(200).send('OK')
   }catch(e){console.error('HashPay webhook error:',e.message);return res.status(500).send('Webhook processing error')}
  });
- app.use(express.json({limit:'96kb'}));app.use('/images',express.static(path.join(__dirname,'images'),{maxAge:'7d',immutable:true}));
- app.post('/api/admin/login',loginLimiter,(req,res)=>{const email=String(req.body.email||'').trim().toLowerCase(),password=String(req.body.password||'');if(!safeEqual(email,adminEmail)||!safeEqual(password,adminPassword))return res.status(401).json({error:'Email or password is incorrect.'});const payload=b64(JSON.stringify({email:adminEmail,exp:Date.now()+8*60*60*1000})),secure=process.env.NODE_ENV==='production'?'; Secure':'';res.setHeader('Set-Cookie',`tk_admin=${encodeURIComponent(payload+'.'+sig(payload))}; HttpOnly${secure}; SameSite=Strict; Path=/; Max-Age=28800`);res.json({ok:true})});
+  databaseReady=true;
+  app.post('/api/admin/login',loginLimiter,(req,res)=>{if(!adminConfigured)return res.status(503).json({error:'Admin access is disabled until ADMIN_EMAIL, ADMIN_PASSWORD and a 32+ character SESSION_SECRET are configured.'});const email=String(req.body.email||'').trim().toLowerCase(),password=String(req.body.password||'');if(!safeEqual(email,adminEmail)||!safeEqual(password,adminPassword))return res.status(401).json({error:'Email or password is incorrect.'});const payload=b64(JSON.stringify({email:adminEmail,exp:Date.now()+8*60*60*1000})),secure=process.env.NODE_ENV==='production'?'; Secure':'';res.setHeader('Set-Cookie',`tk_admin=${encodeURIComponent(payload+'.'+sig(payload))}; HttpOnly${secure}; SameSite=Strict; Path=/; Max-Age=28800`);res.json({ok:true})});
  app.get('/api/admin/session',(req,res)=>res.json({authenticated:adminSession(req)}));
  app.post('/api/admin/logout',sameOrigin,requireAdmin,(req,res)=>{const secure=process.env.NODE_ENV==='production'?'; Secure':'';res.setHeader('Set-Cookie',`tk_admin=; HttpOnly${secure}; SameSite=Strict; Path=/; Max-Age=0`);res.json({ok:true})});
- app.get('/api/config',(req,res)=>res.json({paymentsEnabled:Boolean(hashpayAccount&&webhookSecret),hashpayAccount:hashpayAccount||null}));
  app.get('/api/venues',async(req,res)=>res.json((await collections.venues.find({}).sort({category:1,name:1}).toArray()).map(v=>({id:v._id,name:v.name,kind:v.kind,town:v.town,county:v.county,capacity:v.capacity,category:v.category,image:v.image,layoutStatus:v.layoutStatus,sections:v.sections||[],gates:v.gates||[],features:v.features||[]}))));
  app.get('/api/events',async(req,res)=>{const now=new Date(),query={status:'published'};if(req.query.scope==='current'){query.startsAt={$lte:now.toISOString()};query.endsAt={$gte:now.toISOString()}}else query.startsAt={$gt:now.toISOString()};if(req.query.category)query.category=String(req.query.category);const docs=await collections.events.find(query).sort({startsAt:1}).toArray();res.json(await Promise.all(docs.map(eventOut)))});
  app.get('/api/events/:id',async(req,res)=>{const e=await collections.events.findOne({_id:req.params.id,status:'published'});if(!e)return res.status(404).json({error:'Event not found.'});const out=await eventOut(e);if(req.query.detail==='full'){const seats=await collections.inventory.find({eventId:e._id,status:'available'}).project({tierId:1,seatCode:1,section:1,gate:1,_id:0}).toArray();out.availableSeats=seats}res.json(out)});
@@ -153,8 +166,8 @@ async function start(){
  app.get('/api/orders/:id/tickets.pdf',async(req,res)=>{const order=await accessOrder(req.params.id,req.query.token);if(!order||order.status!=='paid')return res.status(403).json({error:'Paid tickets are not available.'});const tickets=await collections.tickets.find({orderId:order._id}).sort({index:1}).toArray();res.setHeader('Content-Type','application/pdf');res.setHeader('Content-Disposition',`attachment; filename="Ticketing-Kenya-${order.reference}.pdf"`);const doc=new PDFDocument({size:[420,595],margin:0,autoFirstPage:false});doc.pipe(res);const base=process.env.PUBLIC_BASE_URL||`${req.protocol}://${req.get('host')}`;for(const t of tickets){doc.addPage();await drawTicketPdf(doc,t,base)}doc.end()});
  app.get('/api/tickets/:code/qr.png',async(req,res)=>{const t=await collections.tickets.findOne({ticketCode:req.params.code,status:'valid'});if(!t)return res.status(404).end();const base=process.env.PUBLIC_BASE_URL||`${req.protocol}://${req.get('host')}`;res.type('png').send(await QRCode.toBuffer(`${base.replace(/\/$/,'')}/validate/${t.ticketCode}`,{width:360,margin:2}))});
  app.get('/api/tickets/:code',async(req,res)=>{const t=await collections.tickets.findOne({ticketCode:req.params.code,status:'valid'});if(!t)return res.json({valid:false});res.json({valid:true,event:t.eventTitle,venue:t.venueName,startsAt:t.startsAt,seat:t.seatCode,section:t.section,gate:t.gate,tier:t.tierName})});
- app.get('/',(req,res)=>res.sendFile(path.join(__dirname,'index.html')));app.get('/admin',(req,res)=>res.sendFile(path.join(__dirname,'index.html')));app.get('/validate/:code',async(req,res)=>{const t=await collections.tickets.findOne({ticketCode:req.params.code,status:'valid'});const text=t?`VALID TICKET\n${t.eventTitle}\n${t.venueName}\n${t.seatCode||t.section}\n${t.gate||'See event gate instructions'}`:'INVALID OR USED TICKET';res.status(t?200:404).type('text/plain').send(text)});
- app.listen(port,'0.0.0.0',()=>console.log(`Ticketing Kenya connected to MongoDB database ${mongoDbName} on port ${port}`));
+  app.get('/validate/:code',async(req,res)=>{const t=await collections.tickets.findOne({ticketCode:req.params.code,status:'valid'});const text=t?`VALID TICKET\n${t.eventTitle}\n${t.venueName}\n${t.seatCode||t.section}\n${t.gate||'See event gate instructions'}`:'INVALID OR USED TICKET';res.status(t?200:404).type('text/plain').send(text)});
+ console.log(`Ticketing Kenya connected to MongoDB database ${mongoDbName}`);
 }
 
 async function accessOrder(id,token){if(!token)return null;return collections.orders.findOne({_id:String(id),accessHash:crypto.createHash('sha256').update(String(token)).digest('hex')})}
@@ -163,4 +176,10 @@ async function drawTicketPdf(doc,t,baseUrl){
  doc.rect(0,0,420,595).fill(palette.paper);doc.rect(0,0,420,162).fill(palette.dark);doc.rect(0,157,420,5).fill(palette.accent);doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(13).text('TICKETING KENYA',28,24);doc.fillColor(palette.accent).fontSize(9).text(palette.label,28,62);doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(23).text(t.eventTitle,{x:28,y:84,width:356,height:58});doc.fillColor('#273640').font('Helvetica-Bold').fontSize(8).text('ATTENDEE',28,188);doc.font('Helvetica').fontSize(14).text(t.attendee.name,28,203);doc.font('Helvetica-Bold').fontSize(8).text('VENUE',28,242);doc.font('Helvetica').fontSize(12).text(`${t.venueName}, ${t.venueTown}`,28,257,{width:355});doc.font('Helvetica-Bold').fontSize(8).text('DATE & TIME',28,291);doc.font('Helvetica').fontSize(11).text(new Date(t.startsAt).toLocaleString('en-KE',{dateStyle:'medium',timeStyle:'short',timeZone:'Africa/Nairobi'}),28,305);doc.font('Helvetica-Bold').fontSize(8).text('TICKET TYPE',28,341);doc.font('Helvetica').fontSize(12).text(t.tierName,28,356);doc.font('Helvetica-Bold').fontSize(8).text(t.seatCode&&t.seatCode!=='General admission'?'SEAT':'ACCESS',28,391);doc.font('Helvetica-Bold').fontSize(19).fillColor(palette.dark).text(t.seatCode||t.section,28,406);doc.font('Helvetica-Bold').fontSize(8).fillColor('#273640').text('ENTRY GATE',245,391);doc.font('Helvetica').fontSize(12).text(t.gate||'See event gate instructions',245,408,{width:145});doc.font('Helvetica').fontSize(8).fillColor('#60717c').text(`TICKET ID  ${t.ticketCode}`,28,455);const qr=await QRCode.toBuffer(`${baseUrl.replace(/\/$/,'')}/validate/${t.ticketCode}`,{width:145,margin:1});doc.image(qr,245,452,{width:125,height:125});doc.moveTo(28,493).lineTo(220,493).dash(3,{space:3}).stroke('#aeb8bb');doc.font('Helvetica').fontSize(8).fillColor('#60717c').text('Scan at entry · valid for one admission · no resale',28,510,{width:190});doc.font('Helvetica-Bold').fontSize(8).fillColor(palette.dark).text('KARIBU. ENJOY THE MOMENT.',28,555)}
 
 let collections;
-start().catch(err=>{console.error('Ticketing Kenya startup failed:',err);process.exit(1)});
+async function connectDatabaseWithRetry(){
+ while(client&&!databaseReady){
+  try{await start();return}
+  catch(err){databaseReady=false;console.error('MongoDB startup failed; web server remains available. Retrying in 30 seconds:',err);await new Promise(resolve=>setTimeout(resolve,30000))}
+ }
+}
+if(client)connectDatabaseWithRetry();
