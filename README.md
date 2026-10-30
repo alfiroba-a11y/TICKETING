@@ -19,9 +19,11 @@ Deploy this directory as a Docker application and expose port `3000`. Set these 
 | `HASHPAY_ACCOUNT_ID` | HashPay public account ID |
 | `HASHPAY_WEBHOOK_SECRET` | HashPay webhook signing secret |
 
-The app connects to the dedicated `ticketing_kenya` database by default and uses collections prefixed `tk_` (`tk_venues`, `tk_events`, `tk_event_inventory`, `tk_orders`, `tk_tickets`). Set a different `MONGODB_DATABASE` if you need a different namespace. MongoDB credentials and payment secrets remain server-side.
+The app connects to the dedicated `ticketing_kenya` database by default and uses collections prefixed `tk_` (`tk_venues`, `tk_events`, `tk_event_inventory`, `tk_orders`, `tk_tickets`, `tk_members`). Set a different `MONGODB_DATABASE` if you need a different namespace. MongoDB credentials and payment secrets remain server-side.
 
 The HTTP server and homepage start even when optional environment values are missing. If `MONGODB_URI` is absent or the database is unreachable, `/health` stays available and reports the database state; event, booking, and admin data APIs return a temporary unavailable response. MongoDB connection failures retry every 30 seconds. If admin credentials or a 32+ character `SESSION_SECRET` are missing, public pages still load but admin sign-in stays disabled. HashPay checkout stays disabled until its account ID and webhook secret are set. Configure these values to enable the corresponding features.
+
+Customers can create an account or sign in from the public header. Account passwords are hashed before storage, and paid orders are linked to the signed-in account. Guest checkout remains available.
 
 Open `/admin` directly to sign in. There is no public admin link or public event publishing route. Configure the administrator credentials in Coolify. Draft events are private; only events published by the administrator appear on the public site.
 
