@@ -9,7 +9,7 @@ const path = require('node:path');
 const app = express();
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
-app.use((req,res,next)=>{res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','DENY');res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');res.setHeader('Permissions-Policy','camera=(), microphone=(), geolocation=()');next()});
+app.use((req,res,next)=>{res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','DENY');res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');res.setHeader('Permissions-Policy','camera=(), microphone=(), geolocation=()');const proto=String(req.get('x-forwarded-proto')||req.protocol).split(',')[0].trim().toLowerCase();if(proto==='https')res.setHeader('Strict-Transport-Security','max-age=31536000');next()});
 const port=Number(process.env.PORT||3000);
 const adminEmail=String(process.env.ADMIN_EMAIL||'').trim().toLowerCase();
 const adminPassword=String(process.env.ADMIN_PASSWORD||'');
