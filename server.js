@@ -186,7 +186,7 @@ async function start(){
    const attendees=Array.isArray(req.body.attendees)?req.body.attendees:[];if(attendees.length<1||attendees.length>8)throw Error('Choose between 1 and 8 tickets.');
    for(const a of attendees){if(!String(a.name||'').trim()||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(a.email||'')))throw Error('Enter each attendee’s name and a valid email.');if(event.ageRestricted&&!/^[0-9]{7,8}$/.test(String(a.identityNumber||'')))throw Error('This event is 18+. Enter each attendee’s Kenyan identity card number.')}
    const venue=await collections.venues.findOne({_id:event.venueId}),phone=String(req.body.phone||'').trim();if(!/^\+?254[17]\d{8}$|^0[17]\d{8}$/.test(phone))throw Error('Enter a valid Kenyan M-Pesa number.');
-   holdId=crypto.randomUUID();const reference='TK'+crypto.randomBytes(8).toString('hex').toUpperCase(),accessToken=crypto.randomBytes(32).toString('hex'),expiresAt=new Date(Date.now()+10*60*1000),amount=(tier.price+tier.fee)*attendees.length;
+   holdId=crypto.randomUUID();const reference='TK'+crypto.randomBytes(8).toString('hex').toUpperCase(),accessToken=crypto.randomBytes(32).toString('hex'),expiresAt=new Date(Date.now()+10*60*1000),amount=(Number(tier.price)+Number(tier.fee||0))*attendees.length;if(!Number.isSafeInteger(amount)||amount<1||amount>999999)throw Error('The selected tickets must total between KSh 1 and KSh 999,999.');
    await collections.inventory.updateMany({eventId:event._id,tierId:tier.id,status:'held',holdExpiresAt:{$lte:new Date()}},{$set:{status:'available'},$unset:{orderId:'',holdExpiresAt:''}});
    let seatChoices=[];
    if(tier.seatMode==='numbered'){
