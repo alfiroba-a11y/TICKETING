@@ -59,7 +59,7 @@ The app distinguishes upcoming from happening-now events using the event start/e
 
 ## Homepage photography credits
 
-The homepage uses locally bundled, real photographs from Wikimedia Commons rather than generated imagery for the Kenyan flag and Big Five feature. The site displays attribution and license links in the photo credits disclosure:
+The homepage uses locally bundled, real photographs from Wikimedia Commons rather than generated imagery for the Kenyan flag and wildlife feature. Full attribution and license links for those photographs are listed below for compliance; they are not displayed in the customer dashboard.
 
 County flag reference images: [Flags of counties of Kenya](https://commons.wikimedia.org/wiki/Category:Flags_of_counties_of_Kenya). The available set is incomplete and some flags/designs may not be officially adopted; county badges fall back to a neutral county abbreviation when an image is unavailable.
 
