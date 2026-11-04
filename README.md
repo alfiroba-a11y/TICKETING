@@ -77,4 +77,4 @@ The homepage also includes the [Coat of arms of Kenya (Official).svg](https://co
 
 ### Homepage discovery
 
-Published events appear in search and category listings. Administrators can mark a published event as featured from the event editor; featured event cards are selected from those published records and link to the normal event detail and checkout flow.
+Published events appear in search and category listings. Administrators can mark a published event as trending from the event editor; trending cards are selected from those published records and link to the normal event detail and checkout flow.
