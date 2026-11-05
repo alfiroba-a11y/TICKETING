@@ -91,6 +91,8 @@ The mobile layout follows the supplied reference screens: compact header with me
 
 Selecting Buy Ticket opens a responsive three-level stadium seating plan and the event’s published ticket types. Numbered seats shown afterward come from the event inventory API; the plan itself does not invent live seat availability. Checkout is M-Pesa only. After the server sends a prompt, the buyer sees a payment-waiting screen with the total, masked phone number, resend countdown and cancel control. It remains in the verification flow until payment is confirmed or cancelled.
 
+The seating diagram includes the section labels shown in the supplied Talanta map: Level 1 sections 101–128; Level 2 sections 201–220 and 301–350; Level 3 sections 401–435; plus Media, Platinum and Gold F01–F05 labels. Map levels and numbered sections are clickable. This is a section-map reference, not verified seat-by-seat inventory: row counts, actual gate assignments and live occupied seats must come from the venue/event configuration. The official event guidance says the attendee's assigned gate is printed on their ticket, so the application does not invent a gate from the map.
+
 
 ## HTTPS and custom domain
 
