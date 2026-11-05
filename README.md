@@ -85,3 +85,8 @@ The public page follows the supplied Talanta Sports City reference: match hero, 
 The match page uses locally hosted assets from Talanta Sports City to avoid remote image/font loading: dusk stadium hero and hospitality photography, stadium interior photography, team crests, and the Talanta logo. The page typography uses Anton for condensed display headings and Barlow/Barlow Condensed for body and interface text. The WOFF2 font files and SIL Open Font License notices are in `images/talanta-reference`. The user confirmed written permission for commercial use of the Talanta Sports City photos and logos.
 
 The mobile layout follows the supplied reference screens: compact header with menu, full-width dusk match hero, large condensed event title and buy button, stadium overview with image first, hospitality cards, directions/map, FAQs, and responsive footer. Checkout remains guest-only; verified tickets appear on screen and a Ticketing Kenya administrator emails them manually.
+
+
+## Talanta ticket selection
+
+Selecting Buy Ticket opens a responsive three-level stadium seating plan and the event’s published ticket types. Numbered seats shown afterward come from the event inventory API; the plan itself does not invent live seat availability. Checkout is M-Pesa only. After the server sends a prompt, the buyer sees a payment-waiting screen with the total, masked phone number, resend countdown and cancel control. It remains in the verification flow until payment is confirmed or cancelled.
