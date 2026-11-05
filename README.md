@@ -15,7 +15,7 @@ Deploy this directory as a Docker application and expose port `3000`. Set these 
 | `SESSION_SECRET` | Random secret of at least 32 characters |
 | `MONGODB_URI` | MongoDB connection string |
 | `MONGODB_DATABASE` | `ticketing_kenya` (separate database namespace) |
-| `PUBLIC_BASE_URL` | Public HTTPS URL for QR validation links |
+| `PUBLIC_BASE_URL` | `https://talantasportcity.site` (public HTTPS URL for QR validation links) |
 | `HASHPAY_ACCOUNT_ID` | HashPay public account ID |
 | `HASHPAY_API_KEY` | Private HashPay API key used only by the server to send M-Pesa prompts |
 | `HASHPAY_WEBHOOK_SECRET` | HashPay webhook signing secret |
@@ -90,3 +90,16 @@ The mobile layout follows the supplied reference screens: compact header with me
 ## Talanta ticket selection
 
 Selecting Buy Ticket opens a responsive three-level stadium seating plan and the event’s published ticket types. Numbered seats shown afterward come from the event inventory API; the plan itself does not invent live seat availability. Checkout is M-Pesa only. After the server sends a prompt, the buyer sees a payment-waiting screen with the total, masked phone number, resend countdown and cancel control. It remains in the verification flow until payment is confirmed or cancelled.
+
+
+## HTTPS and custom domain
+
+Set `PUBLIC_BASE_URL=https://talantasportcity.site` in Coolify so ticket QR codes and links use the secure custom domain. Attach `talantasportcity.site` to the Coolify application, enable HTTPS/Let’s Encrypt for that domain, and keep the app exposed on container port `3000`. The domain currently redirects HTTP to HTTPS. Open the site as `https://talantasportcity.site`; if a browser still shows an old warning, close the old tab and open the HTTPS address directly.
+
+## Google Search Console and event indexing
+
+`PUBLIC_BASE_URL` must match the verified public HTTPS domain (`https://talantasportcity.site`). The homepage and each published event have a canonical URL. Published events are served at `/events/<event-id>` with event-specific server-rendered event details, title, description, canonical metadata and Schema.org `Event` JSON-LD. Draft and unpublished events are excluded from the public event pages and sitemap. `/sitemap.xml` lists the homepage and published events; `/robots.txt` points crawlers to that sitemap and excludes private admin/API paths.
+
+To connect the property, verify the **domain** in [Google Search Console](https://search.google.com/search-console/) using the DNS TXT record Google provides. DNS verification is preferable because it covers the domain and subdomains. After verification, submit `https://talantasportcity.site/sitemap.xml` in Search Console. Inspect the homepage and at least one published `/events/<event-id>` URL with URL Inspection, and fix any reported crawl, canonical, or structured-data issues. `GOOGLE_SITE_VERIFICATION` is optional and is only needed if using Search Console's HTML-tag ownership method; set it to the token value Google provides (not the entire meta tag).
+
+Search Console can report indexing status and structured-data eligibility; it cannot guarantee a ranking, event rich result, or that Google will label a site as the only official seller. Keep the written exclusive-seller authorization and ensure the organizer's official site links to this domain, which helps establish the relationship. Do not publish event information that is not confirmed by the organizer.
