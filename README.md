@@ -78,3 +78,10 @@ The homepage also includes the [Coat of arms of Kenya (Official).svg](https://co
 ### Stadium homepage
 
 The public page follows the supplied Talanta Sports City reference: match hero, stadium overview, AFCON 2027 information, ticket options, directions, FAQs, and footer. An unpublished match is not shown as available for sale.
+
+
+## Talanta reference assets
+
+The match page uses locally hosted assets from Talanta Sports City to avoid remote image/font loading: dusk stadium hero and hospitality photography, stadium interior photography, team crests, and the Talanta logo. The page typography uses Anton for condensed display headings and Barlow/Barlow Condensed for body and interface text. The WOFF2 font files and SIL Open Font License notices are in `images/talanta-reference`. The user confirmed written permission for commercial use of the Talanta Sports City photos and logos.
+
+The mobile layout follows the supplied reference screens: compact header with menu, full-width dusk match hero, large condensed event title and buy button, stadium overview with image first, hospitality cards, directions/map, FAQs, and responsive footer. Checkout remains guest-only; verified tickets appear on screen and a Ticketing Kenya administrator emails them manually.
