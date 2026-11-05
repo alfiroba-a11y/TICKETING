@@ -1,6 +1,6 @@
 # Ticketing Kenya
 
-A Coolify-ready event discovery and ticketing app with a private administrator portal, MongoDB storage, configurable Kenyan venue layouts, background HashPay M-Pesa checkout, QR tickets, and printable PDF passes.
+A Coolify-ready Talanta Sports City match site by Ticketing Kenya, with a private administrator portal, MongoDB storage, background HashPay M-Pesa checkout, QR tickets, and printable PDF passes.
 
 ## Coolify deployment
 
@@ -24,7 +24,7 @@ The app connects to the dedicated `ticketing_kenya` database by default and uses
 
 The HTTP server and homepage start even when optional environment values are missing. If `MONGODB_URI` is absent or the database is unreachable, `/health` stays available and reports the database state; event, booking, and admin data APIs return a temporary unavailable response. MongoDB connection failures retry every 30 seconds. The private admin sign-in page and credential check stay available while MongoDB reconnects; the dashboard explains when its data tools are waiting for the database. Admin sign-in is enabled when `ADMIN_EMAIL` and `ADMIN_PASSWORD` are set. Session cookies follow the actual HTTPS connection reported by Coolify. If `SESSION_SECRET` is absent, the app derives a stable signing key from the MongoDB URI (or the admin credentials when MongoDB is not configured); set a random 32+ character secret in production and keep it stable. Background HashPay STK Push stays disabled until the account ID, private API key and webhook secret are set. Configure these values to enable the corresponding features.
 
-Customers can create an account with their full names, county, Gmail address and a password of at least 6 characters. Registration signs them in immediately. Member sessions end after one hour without an authenticated request. An identity card number is requested only when an administrator marks an event as 18+; for those events, a number is required for each attendee and encrypted before being stored with the order. Passwords are hashed; keep `SESSION_SECRET` stable so encrypted identity details remain readable to authorized application flows. Signed-in account holders can manage profile preferences, review their wallet ledger, view/transfer eligible tickets, manage sessions, request account deletion, export their data and message support. The private admin panel includes member records, wallet adjustments and support conversations. Support replies are stored and refresh in the profile while it is open.
+Ticket purchases use guest checkout; customers do not need to create an account. Checkout collects an email address, each ticket holder’s name, and an M-Pesa number. Tickets are issued after the payment webhook verifies payment, then shown on the confirmation screen for download. Ticketing Kenya sends the buyer’s email copy manually: administrators can download the paid order PDF from Payments & orders and mark the email as sent. Identity numbers are only requested when the administrator marks an event as 18+; those numbers are encrypted before storage.
 
 Administrator sign-in allows 20 failed attempts per five minutes for each IP and email pair. Member sign-in allows 30 failed attempts for each IP and email pair. The limits are independent, so attempts against one email or the admin panel do not lock other customer accounts. Successful sign-ins do not count toward the limit.
 
@@ -44,7 +44,7 @@ Use Node.js 22 or later. Copy `.env.example` to `.env`, fill in the values, then
 
 ## Venues and seating
 
-The starter directory includes Talanta Sports Stadium, Kasarani, Nyayo, selected stadiums in other counties, the user-listed cinema locations, and selected theatres. It is a useful starting directory, not a complete authoritative register of every Kenyan venue. The supplied photographs are used in the sports, cinema and theatre discovery pages.
+The public homepage is a Talanta Sports City stadium microsite. Its match date, venue, ticket tiers, prices, and availability are loaded from the published event record; it does not seed sample events. The administrator manages the match and ticket options in the private event dashboard.
 
 Venue references and proposed sections are not the same as a confirmed seating chart. Talanta’s Lower/Upper/VIP/VVIP, Kasarani’s Lower/Upper/VIP/VVIP, Nyayo’s stands, cinema tiers, and the supplied gate references begin as unverified. In `/admin`, verify the real gate names and configure exact rows/seats per row before marking a map venue-verified. Numbered seat tickets cannot be published without that information. General-admission tickets do not claim a seat. This keeps seat numbers and gate instructions from being invented.
 
@@ -75,6 +75,6 @@ The homepage also includes the [Coat of arms of Kenya (Official).svg](https://co
 © 2026/27 Ticketing Kenya.
 
 
-### Homepage discovery
+### Stadium homepage
 
-Published events appear in search and category listings. Administrators can mark a published event as trending from the event editor; trending cards are selected from those published records and link to the normal event detail and checkout flow.
+The public page follows the supplied Talanta Sports City reference: match hero, stadium overview, AFCON 2027 information, ticket options, directions, FAQs, and footer. An unpublished match is not shown as available for sale.
