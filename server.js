@@ -197,7 +197,7 @@ async function start(){
   if(!hashpayAccount||!hashpayApiKey||!webhookSecret)return res.status(503).json({error:'Mobile money checkout is temporarily unavailable. Please try again later.'});
    let holdId='',paymentContext=null,dispatchUncertain=false;
   try{
-    const event=await collections.events.findOne({_id:String(req.body.eventId),status:'published',archivedAt:{$exists:false}});if(!event)return res.status(404).json({error:'This event is no longer available for new bookings.'});if(event.inventoryReady===false)throw Error('Ticket inventory is still being prepared. Please retry in a moment.');if(event.startsAt<nairobiDayBounds().today)throw Error('Bookings are closed for past event dates.');
+    const event=await collections.events.findOne({_id:String(req.body.eventId),status:'published',archivedAt:{$exists:false}});if(!event)return res.status(404).json({error:'This event is no longer available for new bookings.'});if(event.startsAt<nairobiDayBounds().today)throw Error('Bookings are closed for past event dates.');
    const tier=(event.ticketTypes||[]).find(t=>t.id===String(req.body.tierId));if(!tier)return res.status(400).json({error:'Ticket format not found.'});
    const attendees=Array.isArray(req.body.attendees)?req.body.attendees:[];if(attendees.length<1||attendees.length>8)throw Error('Choose between 1 and 8 tickets.');
     for(const a of attendees){if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(a.email||'')))throw Error('Enter a valid email address for ticket delivery.');if(event.ageRestricted&&!/^[0-9]{7,8}$/.test(String(a.identityNumber||'')))throw Error('This event is 18+. Enter each attendee’s Kenyan identity card number.')}
